@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spicy Confessions</title>
+    <link rel="stylesheet" href="confessions.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Spicy Tongue -->
+        <header class="header">
+            <div class="spicy-tongue">
+                <div class="tongue-base"></div>
+                <div class="tongue-tip"></div>
+                <div class="tongue-spice spice1"></div>
+                <div class="tongue-spice spice2"></div>
+                <div class="tongue-spice spice3"></div>
+            </div>
+            <h1 class="title">🔥 Spicy Confessions 🔥</h1>
+            <p class="subtitle">Share your secrets anonymously</p>
+        </header>
+
+        <!-- Post Button (Always on top) -->
+        <div class="post-button-container">
+            <button class="post-btn" id="postBtn">
+                <span class="btn-text">💭 Share Confession</span>
+                <span class="btn-icon">+</span>
+            </button>
+        </div>
+
+        <!-- Confession Input Modal -->
+        <div class="modal" id="confessionModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>💭 Write Your Confession</h2>
+                    <button class="close-btn" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea 
+                        id="confessionText" 
+                        placeholder="Type your anonymous confession here..."
+                        maxlength="500"
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/500
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="cancel-btn" id="cancelBtn">Cancel</button>
+                    <button class="submit-btn" id="submitBtn">Post Confession</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confessions Feed -->
+        <div class="confessions-feed" id="confessionsFeed">
+            <div class="feed-header">
+                <h3>🔥 Latest Confessions</h3>
+                <div class="feed-stats">
+                    <span id="confessionCount">0</span> confessions shared
+                </div>
+            </div>
+            <div class="confessions-list" id="confessionsList">
+                <!-- Confessions will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="confessions.js"></script>
+</body>
+</html>
