@@ -393,9 +393,12 @@ async function toggleLike(confessionId) {
                 user_identifier: isFarcasterUser ? null : userIdentifier
             };
             
-            const { error } = await supabase
+            const { data: insertData, error } = await supabase
                 .from('confession_likes')
-                .insert([likeData]);
+                .insert([likeData])
+                .select();
+            
+            console.log('Insert like result:', { insertData, error, likeData });
             dbError = error;
         }
         
@@ -413,7 +416,8 @@ async function toggleLike(confessionId) {
             }
             showToast('Failed to update like. Please try again.', 'error');
         } else {
-            // Success - reload confessions to get accurate counts from database
+            // Success - manually recalculate like counts and reload
+            await recalculateLikeCounts();
             await loadConfessions();
         }
         
@@ -437,6 +441,22 @@ function updateConfessionCount() {
 // Generate anonymous user identifier
 function generateUserIdentifier() {
     return 'anon_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now();
+}
+
+// Manually recalculate like counts (for when triggers don't work)
+async function recalculateLikeCounts() {
+    try {
+        console.log('Manually recalculating like counts...');
+        const { data, error } = await supabase.rpc('recalculate_like_counts');
+        
+        if (error) {
+            console.error('Error recalculating like counts:', error);
+        } else {
+            console.log('Like counts recalculated successfully');
+        }
+    } catch (error) {
+        console.error('Error calling recalculate function:', error);
+    }
 }
 
 // Load confessions from Supabase

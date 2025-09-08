@@ -137,7 +137,20 @@ GRANT ALL ON confessions_id_seq TO anon, authenticated;
 GRANT ALL ON confession_likes_id_seq TO anon, authenticated;
 GRANT SELECT ON confessions_with_metadata TO anon, authenticated;
 
--- 13. Sample data (optional - for testing)
+-- 13. Function to manually recalculate like counts (for debugging/fixing)
+CREATE OR REPLACE FUNCTION recalculate_like_counts()
+RETURNS void AS $$
+BEGIN
+    UPDATE confessions 
+    SET like_count = (
+        SELECT COUNT(*) 
+        FROM confession_likes 
+        WHERE confession_likes.confession_id = confessions.id
+    );
+END;
+$$ language 'plpgsql';
+
+-- 14. Sample data (optional - for testing)
 -- INSERT INTO confessions (text, is_anonymous) VALUES 
 -- ('This is my first spicy confession! 🔥', true),
 -- ('I secretly love pineapple on pizza', true),
