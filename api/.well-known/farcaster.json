@@ -2,20 +2,20 @@
     "miniapp": {
       "name": "Spicy Confessions",
       "version": "1",
-      "iconUrl": "https://confessions-psi.vercel.app/public/icon.png",
-      "homeUrl": "https://confessions-psi.vercel.app",
-      "imageUrl": "https://confessions-psi.vercel.app/public/header.png",
+      "iconUrl": "https://confessions-five.vercel.app/public/icon.png",
+      "homeUrl": "https://confessions-five.vercel.app",
+      "imageUrl": "https://confessions-five.vercel.app/public/header.png",
       "buttonTitle": "Share Confession",
-      "splashImageUrl": "https://confessions-psi.vercel.app/public/icon.png",
+      "splashImageUrl": "https://confessions-five.vercel.app/public/icon.png",
       "splashBackgroundColor": "#ff6b6b",
-      "webhookUrl": "https://confessions-psi.vercel.app/api/webhook",
+      "webhookUrl": "https://confessions-five.vercel.app/api/webhook",
       "subtitle": "Share your secrets anonymously with a fun, spicy design theme",
       "description": "A mobile-responsive web application for sharing anonymous confessions with a fun, spicy design theme. Features include spicy tongue animation, mobile responsive design, anonymous confessions, sticky post button, character counter, local storage persistence, like system, timestamps, keyboard shortcuts, and modern UI with beautiful gradients and smooth animations.",
       "primaryCategory": "social",
       "screenshotUrls": [
-        "https://confessions-psi.vercel.app/public/header.png"
+        "https://confessions-five.vercel.app/public/header.png"
       ],
-      "heroImageUrl": "https://confessions-psi.vercel.app/public/header.png",
+      "heroImageUrl": "https://confessions-five.vercel.app/public/header.png",
       "tags": [
         "social",
         "anonymous",
@@ -26,6 +26,6 @@
       "tagline": "🔥 Share Your Spicy Secrets",
       "ogTitle": "🔥 Spicy Confessions - Share Your Secrets Anonymously",
       "ogDescription": "A mobile-responsive web application for sharing anonymous confessions with a fun, spicy design theme.",
-      "ogImageUrl": "https://confessions-psi.vercel.app/public/icon.png"
+      "ogImageUrl": "https://confessions-five.vercel.app/public/icon.png"
     }
   } 
