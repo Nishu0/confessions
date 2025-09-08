@@ -101,11 +101,18 @@ async function initializeMiniApp() {
             };
         }
         
-        // Get user profile if available
-        if (sdk && sdk.user) {
+        // Get user profile/context if available
+        if (sdk && sdk.context) {
             try {
-                userProfile = sdk.user;
-                console.log('User profile:', userProfile);
+                userProfile = sdk.context.user;
+                console.log('User profile from context:', userProfile);
+                
+                // If we have a Farcaster user, use their FID instead of anonymous identifier
+                if (userProfile && userProfile.fid) {
+                    userIdentifier = `fid_${userProfile.fid}`;
+                    localStorage.setItem('spicy_user_id', userIdentifier);
+                    console.log('Using Farcaster FID as identifier:', userIdentifier);
+                }
             } catch (error) {
                 console.log('User not authenticated or not in Mini App environment');
             }
@@ -360,24 +367,35 @@ async function toggleLike(confessionId) {
         
         // Update database
         let dbError = null;
+        const isFarcasterUser = userIdentifier.startsWith('fid_');
+        const fid = isFarcasterUser ? parseInt(userIdentifier.replace('fid_', '')) : null;
+        
         if (isCurrentlyLiked) {
             // Remove like from database
-            const { error } = await supabase
+            let deleteQuery = supabase
                 .from('confession_likes')
                 .delete()
-                .eq('confession_id', confessionId)
-                .eq('user_identifier', userIdentifier);
+                .eq('confession_id', confessionId);
+                
+            if (isFarcasterUser) {
+                deleteQuery = deleteQuery.eq('user_fid', fid);
+            } else {
+                deleteQuery = deleteQuery.eq('user_identifier', userIdentifier);
+            }
+            
+            const { error } = await deleteQuery;
             dbError = error;
         } else {
             // Add like to database
+            const likeData = {
+                confession_id: confessionId,
+                user_fid: fid,
+                user_identifier: isFarcasterUser ? null : userIdentifier
+            };
+            
             const { error } = await supabase
                 .from('confession_likes')
-                .insert([
-                    {
-                        confession_id: confessionId,
-                        user_identifier: userIdentifier
-                    }
-                ]);
+                .insert([likeData]);
             dbError = error;
         }
         
@@ -424,9 +442,17 @@ function generateUserIdentifier() {
 // Load confessions from Supabase
 async function loadConfessions() {
     try {
+        // Get confessions with actual like counts
         const { data, error } = await supabase
-            .from('confessions_with_metadata')
-            .select('*')
+            .from('confessions')
+            .select(`
+                id,
+                text,
+                created_at,
+                updated_at,
+                like_count,
+                is_anonymous
+            `)
             .order('created_at', { ascending: false })
             .limit(50); // Limit to latest 50 confessions
 
@@ -436,6 +462,7 @@ async function loadConfessions() {
         }
 
         confessions = data || [];
+        console.log('Loaded confessions with like counts:', confessions);
         renderConfessions();
         updateConfessionCount();
     } catch (error) {
@@ -446,10 +473,20 @@ async function loadConfessions() {
 // Load user's likes from Supabase
 async function loadUserLikes() {
     try {
-        const { data, error } = await supabase
+        const isFarcasterUser = userIdentifier.startsWith('fid_');
+        const fid = isFarcasterUser ? parseInt(userIdentifier.replace('fid_', '')) : null;
+        
+        let query = supabase
             .from('confession_likes')
-            .select('confession_id')
-            .eq('user_identifier', userIdentifier);
+            .select('confession_id');
+            
+        if (isFarcasterUser) {
+            query = query.eq('user_fid', fid);
+        } else {
+            query = query.eq('user_identifier', userIdentifier);
+        }
+        
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error loading user likes:', error);
@@ -460,6 +497,8 @@ async function loadUserLikes() {
         data?.forEach(like => {
             userLikes.add(like.confession_id.toString());
         });
+        
+        console.log('Loaded user likes:', Array.from(userLikes));
         
         // Re-render confessions to update like states
         renderConfessions();

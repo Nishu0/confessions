@@ -24,9 +24,15 @@ CREATE TABLE IF NOT EXISTS confession_likes (
     user_identifier TEXT, -- Fallback identifier (IP hash, session ID, etc.)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     
-    -- Ensure one like per user per confession
-    UNIQUE(confession_id, user_fid),
-    UNIQUE(confession_id, user_identifier)
+    -- Ensure one like per user per confession (either by FID or identifier)
+    CONSTRAINT unique_fid_like UNIQUE(confession_id, user_fid),
+    CONSTRAINT unique_identifier_like UNIQUE(confession_id, user_identifier),
+    
+    -- Ensure either user_fid or user_identifier is provided, but not both
+    CONSTRAINT check_user_identification CHECK (
+        (user_fid IS NOT NULL AND user_identifier IS NULL) OR
+        (user_fid IS NULL AND user_identifier IS NOT NULL)
+    )
 );
 
 -- 3. Create indexes for better performance
