@@ -487,47 +487,48 @@ function showToast(message, type = 'success') {
     
     toast.style.cssText = `
         position: fixed;
-        top: 50%;
+        bottom: 30px;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translateX(-50%);
         background: ${bgColor};
         color: white;
         padding: 15px 25px;
         border-radius: 25px;
         font-weight: 600;
         z-index: 2000;
-        animation: toastPop 3s ease-out forwards;
+        animation: toastSlideUp 2s ease-out forwards;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     `;
     
     document.body.appendChild(toast);
     
-    // Remove after animation
+    // Remove after animation (shorter duration)
     setTimeout(() => {
         if (document.body.contains(toast)) {
             document.body.removeChild(toast);
         }
-    }, 3000);
+    }, 2000);
 }
 
 // Add toast animation CSS
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes toastPop {
+    @keyframes toastSlideUp {
         0% {
             opacity: 0;
-            transform: translate(-50%, -50%) scale(0.5);
+            transform: translateX(-50%) translateY(20px) scale(0.9);
         }
         15% {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1.1);
+            transform: translateX(-50%) translateY(0px) scale(1.05);
         }
         85% {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
+            transform: translateX(-50%) translateY(0px) scale(1);
         }
         100% {
             opacity: 0;
-            transform: translate(-50%, -50%) scale(0.9);
+            transform: translateX(-50%) translateY(-10px) scale(0.95);
         }
     }
     
