@@ -41,7 +41,7 @@
     <meta name="farcaster:app:image" content="https://confessions-five.vercel.app/public/header.png">
     
     <!-- Critical Meta Tag for Mini App Embed -->
-    <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://confessions-five.vercel.app/public/header.png","button":{"title":"Share Confession","action":{"type":"launch_miniapp","url":"https://confessions-five.vercel.app"}}}' />
+    <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://confessions-five.vercel.app/public/header.png","button":{"title":"Share Confession","action":{"type":"launch_miniapp","name":"Spicy Confessions","url":"https://confessions-five.vercel.app","splashImageUrl":"https://confessions-five.vercel.app/public/icon.png","splashBackgroundColor":"#ff6b6b"}}}' />
 </head>
 <body>
     <div class="container">
@@ -105,7 +105,10 @@
     </div>
 
     <!-- Farcaster Mini App SDK -->
-    <script type="module" src="https://unpkg.com/@farcaster/miniapp-sdk@0.1.0/dist/index.js"></script>
+    <script type="module">
+        import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
+        window.sdk = sdk;
+    </script>
     
     <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>

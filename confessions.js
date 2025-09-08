@@ -68,25 +68,18 @@ async function initializeApp() {
 
 async function initializeMiniApp() {
     try {
-        // Try to import the Farcaster SDK
-        if (typeof window !== 'undefined' && window.sdk) {
+        // Wait for SDK to be available from the module script
+        let attempts = 0;
+        while (!window.sdk && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (window.sdk) {
             sdk = window.sdk;
-            console.log('Farcaster SDK loaded from window');
+            console.log('Farcaster SDK loaded successfully');
         } else {
-            // Try dynamic import
-            try {
-                const sdkModule = await import('@farcaster/miniapp-sdk');
-                sdk = sdkModule.sdk;
-                console.log('Farcaster SDK loaded via import');
-            } catch (importError) {
-                console.log('Farcaster SDK not available via import, checking CDN...');
-                // SDK might be loaded via CDN, wait a bit and check again
-                await new Promise(resolve => setTimeout(resolve, 100));
-                if (window.sdk) {
-                    sdk = window.sdk;
-                    console.log('Farcaster SDK loaded from CDN');
-                }
-            }
+            console.log('Farcaster SDK not available after waiting, creating mock');
         }
         
         if (!sdk) {
