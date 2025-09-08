@@ -136,6 +136,7 @@ GRANT ALL ON confession_likes TO anon, authenticated;
 GRANT ALL ON confessions_id_seq TO anon, authenticated;
 GRANT ALL ON confession_likes_id_seq TO anon, authenticated;
 GRANT SELECT ON confessions_with_metadata TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION recalculate_like_counts() TO anon, authenticated;
 
 -- 13. Function to manually recalculate like counts (for debugging/fixing)
 CREATE OR REPLACE FUNCTION recalculate_like_counts()
@@ -146,9 +147,10 @@ BEGIN
         SELECT COUNT(*) 
         FROM confession_likes 
         WHERE confession_likes.confession_id = confessions.id
-    );
+    )
+    WHERE id IS NOT NULL; -- Add WHERE clause for RLS
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql' SECURITY DEFINER;
 
 -- 14. Sample data (optional - for testing)
 -- INSERT INTO confessions (text, is_anonymous) VALUES 

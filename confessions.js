@@ -447,15 +447,46 @@ function generateUserIdentifier() {
 async function recalculateLikeCounts() {
     try {
         console.log('Manually recalculating like counts...');
-        const { data, error } = await supabase.rpc('recalculate_like_counts');
         
-        if (error) {
-            console.error('Error recalculating like counts:', error);
-        } else {
-            console.log('Like counts recalculated successfully');
+        // Get all confessions
+        const { data: confessionsData, error: confessionsError } = await supabase
+            .from('confessions')
+            .select('id');
+            
+        if (confessionsError) {
+            console.error('Error getting confessions:', confessionsError);
+            return;
         }
+        
+        // Update each confession's like count
+        for (const confession of confessionsData) {
+            // Count likes for this confession
+            const { count, error: countError } = await supabase
+                .from('confession_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('confession_id', confession.id);
+                
+            if (countError) {
+                console.error(`Error counting likes for confession ${confession.id}:`, countError);
+                continue;
+            }
+            
+            // Update the confession's like count
+            const { error: updateError } = await supabase
+                .from('confessions')
+                .update({ like_count: count || 0 })
+                .eq('id', confession.id);
+                
+            if (updateError) {
+                console.error(`Error updating like count for confession ${confession.id}:`, updateError);
+            } else {
+                console.log(`Updated confession ${confession.id} like count to ${count || 0}`);
+            }
+        }
+        
+        console.log('Like counts recalculated successfully');
     } catch (error) {
-        console.error('Error calling recalculate function:', error);
+        console.error('Error recalculating like counts:', error);
     }
 }
 
