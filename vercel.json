@@ -16,24 +16,12 @@
       {
         "src": "public/**",
         "use": "@vercel/static"
-      },
-      {
-        "src": ".well-known/**",
-        "use": "@vercel/static"
-      },
-      {
-        "src": "api/**/*.js",
-        "use": "@vercel/node"
       }
     ],
     "rewrites": [
       {
-        "source": "/api/(.*)",
-        "destination": "/api/$1"
-      },
-      {
         "source": "/.well-known/(.*)",
-        "destination": "/api/.well-known/$1"
+        "destination": "/public/.well-known/$1"
       },
       {
         "source": "/(.*\\.png)",
@@ -75,23 +63,6 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/api/.well-known/farcaster.json",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "*"
-          },
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=3600"
           }
         ]
       },
