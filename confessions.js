@@ -11,33 +11,122 @@ const confessionCount = document.getElementById('confessionCount');
 
 // Supabase client
 let supabase;
+let sdk = null; // Farcaster SDK
+let userProfile = null; // Farcaster user profile
+let appLoaded = false;
 
 // Confessions array to store all confessions
 let confessions = [];
 let userLikes = new Set(); // Track user's likes
 let userIdentifier = null; // Anonymous user identifier
 
-// Initialize Supabase and load confessions
+// Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize Supabase client
-    if (window.SUPABASE_CONFIG) {
-        supabase = window.supabase.createClient(
-            window.SUPABASE_CONFIG.url, 
-            window.SUPABASE_CONFIG.anonKey
-        );
-    } else {
-        console.error('Supabase configuration not found');
-        return;
-    }
-
-    // Generate or retrieve user identifier for anonymous likes
-    userIdentifier = localStorage.getItem('spicy_user_id') || generateUserIdentifier();
-    localStorage.setItem('spicy_user_id', userIdentifier);
-
-    // Load confessions and user likes
-    await loadConfessions();
-    await loadUserLikes();
+    await initializeApp();
 });
+
+async function initializeApp() {
+    try {
+        // Initialize Farcaster Mini App SDK
+        await initializeMiniApp();
+        
+        // Initialize Supabase client
+        if (window.SUPABASE_CONFIG) {
+            supabase = window.supabase.createClient(
+                window.SUPABASE_CONFIG.url, 
+                window.SUPABASE_CONFIG.anonKey
+            );
+        } else {
+            console.error('Supabase configuration not found');
+            return;
+        }
+
+        // Generate or retrieve user identifier for anonymous likes
+        userIdentifier = localStorage.getItem('spicy_user_id') || generateUserIdentifier();
+        localStorage.setItem('spicy_user_id', userIdentifier);
+
+        // Load confessions and user likes
+        await loadConfessions();
+        await loadUserLikes();
+        
+        // Mark app as loaded and call ready
+        if (!appLoaded) {
+            appLoaded = true;
+            if (sdk && sdk.actions) {
+                await sdk.actions.ready();
+                console.log('Mini App SDK ready - splash screen hidden');
+            }
+        }
+    } catch (error) {
+        console.error('App initialization failed:', error);
+        // Still call ready even if there's an error to hide splash screen
+        if (sdk && sdk.actions) {
+            await sdk.actions.ready();
+        }
+    }
+}
+
+async function initializeMiniApp() {
+    try {
+        // Try to import the Farcaster SDK
+        if (typeof window !== 'undefined' && window.sdk) {
+            sdk = window.sdk;
+            console.log('Farcaster SDK loaded from window');
+        } else {
+            // Try dynamic import
+            try {
+                const sdkModule = await import('@farcaster/miniapp-sdk');
+                sdk = sdkModule.sdk;
+                console.log('Farcaster SDK loaded via import');
+            } catch (importError) {
+                console.log('Farcaster SDK not available via import, checking CDN...');
+                // SDK might be loaded via CDN, wait a bit and check again
+                await new Promise(resolve => setTimeout(resolve, 100));
+                if (window.sdk) {
+                    sdk = window.sdk;
+                    console.log('Farcaster SDK loaded from CDN');
+                }
+            }
+        }
+        
+        if (!sdk) {
+            console.log('Farcaster SDK not available, running in standalone mode');
+            // Create a mock SDK for standalone mode
+            sdk = {
+                actions: {
+                    ready: async () => console.log('Mock SDK ready - no splash screen to hide')
+                },
+                user: null,
+                haptics: {
+                    impact: () => {}
+                },
+                notifications: {
+                    requestPermission: () => Promise.resolve(),
+                    send: () => Promise.resolve()
+                },
+                share: null
+            };
+        }
+        
+        // Get user profile if available
+        if (sdk && sdk.user) {
+            try {
+                userProfile = sdk.user;
+                console.log('User profile:', userProfile);
+            } catch (error) {
+                console.log('User not authenticated or not in Mini App environment');
+            }
+        }
+    } catch (error) {
+        console.log('Mini App SDK initialization failed:', error);
+        // Create fallback mock SDK
+        sdk = {
+            actions: {
+                ready: async () => console.log('Fallback SDK ready')
+            }
+        };
+    }
+}
 
 // Modal functionality
 postBtn.addEventListener('click', () => {

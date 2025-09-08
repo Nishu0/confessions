@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="confessions.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
+    <!-- Preconnect hints for performance -->
+    <link rel="preconnect" href="https://auth.farcaster.xyz">
+    <link rel="preconnect" href="https://unpkg.com">
+    
     <!-- Meta tags for Mini App -->
     <meta name="description" content="Share your secrets anonymously with a fun, spicy design theme. A mobile-responsive confession app for Farcaster users.">
     <meta name="keywords" content="farcaster, mini app, confessions, anonymous, social, secrets">
@@ -100,6 +104,9 @@
         </div>
     </div>
 
+    <!-- Farcaster Mini App SDK -->
+    <script type="module" src="https://unpkg.com/@farcaster/miniapp-sdk@0.1.0/dist/index.js"></script>
+    
     <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
