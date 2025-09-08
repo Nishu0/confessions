@@ -327,24 +327,49 @@ function escapeHtml(text) {
 
 async function toggleLike(confessionId) {
     try {
-        const isCurrentlyLiked = userLikes.has(confessionId.toString());
+        const confessionIdStr = confessionId.toString();
+        const isCurrentlyLiked = userLikes.has(confessionIdStr);
         
+        // Find the confession in our local array
+        const confession = confessions.find(c => c.id.toString() === confessionIdStr);
+        if (!confession) {
+            console.error('Confession not found:', confessionId);
+            return;
+        }
+
+        // Provide immediate UI feedback
+        const likeBtn = document.querySelector(`[onclick="toggleLike(${confessionId})"]`);
+        const likeIcon = likeBtn?.querySelector('.like-icon');
+        const likeCountSpan = likeBtn?.querySelector('.like-count');
+        
+        // Disable button to prevent double clicks
+        if (likeBtn) likeBtn.disabled = true;
+        
+        // Update UI immediately for better UX
         if (isCurrentlyLiked) {
-            // Remove like
+            // Removing like
+            if (likeIcon) likeIcon.textContent = '🤍';
+            if (likeCountSpan) likeCountSpan.textContent = Math.max(0, confession.like_count - 1);
+            userLikes.delete(confessionIdStr);
+        } else {
+            // Adding like
+            if (likeIcon) likeIcon.textContent = '❤️';
+            if (likeCountSpan) likeCountSpan.textContent = confession.like_count + 1;
+            userLikes.add(confessionIdStr);
+        }
+        
+        // Update database
+        let dbError = null;
+        if (isCurrentlyLiked) {
+            // Remove like from database
             const { error } = await supabase
                 .from('confession_likes')
                 .delete()
                 .eq('confession_id', confessionId)
                 .eq('user_identifier', userIdentifier);
-                
-            if (error) {
-                console.error('Error removing like:', error);
-                return;
-            }
-            
-            userLikes.delete(confessionId.toString());
+            dbError = error;
         } else {
-            // Add like
+            // Add like to database
             const { error } = await supabase
                 .from('confession_likes')
                 .insert([
@@ -353,19 +378,37 @@ async function toggleLike(confessionId) {
                         user_identifier: userIdentifier
                     }
                 ]);
-                
-            if (error) {
-                console.error('Error adding like:', error);
-                return;
-            }
-            
-            userLikes.add(confessionId.toString());
+            dbError = error;
         }
         
-        // Reload confessions to get updated like counts
-        await loadConfessions();
+        if (dbError) {
+            console.error('Database error:', dbError);
+            // Revert UI changes on error
+            if (isCurrentlyLiked) {
+                if (likeIcon) likeIcon.textContent = '❤️';
+                if (likeCountSpan) likeCountSpan.textContent = confession.like_count;
+                userLikes.add(confessionIdStr);
+            } else {
+                if (likeIcon) likeIcon.textContent = '🤍';
+                if (likeCountSpan) likeCountSpan.textContent = confession.like_count;
+                userLikes.delete(confessionIdStr);
+            }
+            showToast('Failed to update like. Please try again.', 'error');
+        } else {
+            // Success - reload confessions to get accurate counts from database
+            await loadConfessions();
+        }
+        
+        // Re-enable button
+        if (likeBtn) likeBtn.disabled = false;
+        
     } catch (error) {
         console.error('Error toggling like:', error);
+        showToast('Failed to update like. Please try again.', 'error');
+        
+        // Re-enable button on error
+        const likeBtn = document.querySelector(`[onclick="toggleLike(${confessionId})"]`);
+        if (likeBtn) likeBtn.disabled = false;
     }
 }
 
@@ -516,8 +559,13 @@ style.textContent = `
         transition: background-color 0.3s ease;
     }
     
-    .like-btn:hover {
+    .like-btn:hover:not(:disabled) {
         background-color: rgba(255, 107, 107, 0.1);
+    }
+    
+    .like-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
     
     .like-icon {
