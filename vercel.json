@@ -1,0 +1,91 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "*.html",
+        "use": "@vercel/static"
+      },
+      {
+        "src": "*.css",
+        "use": "@vercel/static"
+      },
+      {
+        "src": "*.js",
+        "use": "@vercel/static"
+      },
+      {
+        "src": "public/**",
+        "use": "@vercel/static"
+      },
+      {
+        "src": ".well-known/**",
+        "use": "@vercel/static"
+      },
+      {
+        "src": "api/**/*.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/api/(.*)",
+        "destination": "/api/$1"
+      },
+      {
+        "source": "/(.*\\.png)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/(.*\\.jpg)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/(.*\\.jpeg)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/(.*\\.gif)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/(.*\\.webp)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/(.*\\.svg)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/(.*\\.ico)",
+        "destination": "/public/$1"
+      },
+      {
+        "source": "/((?!.*\\.).*)",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/(.*)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=0, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/.well-known/farcaster.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ]
+      }
+    ]
+  } 

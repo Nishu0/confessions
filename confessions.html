@@ -6,6 +6,38 @@
     <title>Spicy Confessions</title>
     <link rel="stylesheet" href="confessions.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Meta tags for Mini App -->
+    <meta name="description" content="Share your secrets anonymously with a fun, spicy design theme. A mobile-responsive confession app for Farcaster users.">
+    <meta name="keywords" content="farcaster, mini app, confessions, anonymous, social, secrets">
+    
+    <!-- Open Graph Meta Tags for Mini App Embedding -->
+    <meta property="og:title" content="🔥 Spicy Confessions - Share Your Secrets Anonymously">
+    <meta property="og:description" content="A mobile-responsive web application for sharing anonymous confessions with a fun, spicy design theme.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://confessions-psi.vercel.app">
+    <meta property="og:image" content="https://confessions-psi.vercel.app/public/icon.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Spicy Confessions">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🔥 Spicy Confessions - Share Your Secrets Anonymously">
+    <meta name="twitter:description" content="A mobile-responsive web application for sharing anonymous confessions with a fun, spicy design theme.">
+    <meta name="twitter:image" content="https://confessions-psi.vercel.app/public/icon.png">
+    
+    <!-- Farcaster Mini App Meta Tags -->
+    <meta name="farcaster:app" content="true">
+    <meta name="farcaster:app:name" content="Spicy Confessions">
+    <meta name="farcaster:app:version" content="1">
+    <meta name="farcaster:app:category" content="social">
+    <meta name="farcaster:app:description" content="Share your secrets anonymously with a fun, spicy design theme">
+    <meta name="farcaster:app:icon" content="https://confessions-psi.vercel.app/public/icon.png">
+    <meta name="farcaster:app:image" content="https://confessions-psi.vercel.app/public/header.png">
+    
+    <!-- Critical Meta Tag for Mini App Embed -->
+    <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://confessions-psi.vercel.app/public/header.png","button":{"title":"Share Confession","action":{"type":"launch_miniapp","url":"https://confessions-psi.vercel.app"}}}' />
 </head>
 <body>
     <div class="container">
@@ -68,6 +100,9 @@
         </div>
     </div>
 
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="confessions.js"></script>
 </body>
 </html>

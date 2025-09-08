@@ -9,16 +9,34 @@ const charCount = document.getElementById('charCount');
 const confessionsList = document.getElementById('confessionsList');
 const confessionCount = document.getElementById('confessionCount');
 
+// Supabase client
+let supabase;
+
 // Confessions array to store all confessions
 let confessions = [];
+let userLikes = new Set(); // Track user's likes
+let userIdentifier = null; // Anonymous user identifier
 
-// Load confessions from localStorage on page load
-document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing confessions from localStorage to start fresh
-    localStorage.removeItem('spicyConfessions');
-    confessions = [];
-    renderConfessions();
-    updateConfessionCount();
+// Initialize Supabase and load confessions
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize Supabase client
+    if (window.SUPABASE_CONFIG) {
+        supabase = window.supabase.createClient(
+            window.SUPABASE_CONFIG.url, 
+            window.SUPABASE_CONFIG.anonKey
+        );
+    } else {
+        console.error('Supabase configuration not found');
+        return;
+    }
+
+    // Generate or retrieve user identifier for anonymous likes
+    userIdentifier = localStorage.getItem('spicy_user_id') || generateUserIdentifier();
+    localStorage.setItem('spicy_user_id', userIdentifier);
+
+    // Load confessions and user likes
+    await loadConfessions();
+    await loadUserLikes();
 });
 
 // Modal functionality
@@ -60,23 +78,45 @@ confessionText.addEventListener('input', () => {
 });
 
 // Submit confession
-submitBtn.addEventListener('click', () => {
+submitBtn.addEventListener('click', async () => {
     const text = confessionText.value.trim();
     if (text) {
-        addConfession(text);
-        closeModalFunc();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Posting...';
+        
+        const success = await addConfession(text);
+        if (success) {
+            closeModalFunc();
+            showSuccessAnimation();
+        } else {
+            showErrorAnimation();
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Post Confession';
     }
 });
 
 // Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', async (e) => {
     // Ctrl/Cmd + Enter to submit
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         if (confessionModal.style.display === 'block') {
             const text = confessionText.value.trim();
-            if (text) {
-                addConfession(text);
-                closeModalFunc();
+            if (text && !submitBtn.disabled) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Posting...';
+                
+                const success = await addConfession(text);
+                if (success) {
+                    closeModalFunc();
+                    showSuccessAnimation();
+                } else {
+                    showErrorAnimation();
+                }
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Post Confession';
             }
         }
     }
@@ -108,26 +148,30 @@ function closeModalFunc() {
     document.body.style.overflow = 'auto';
 }
 
-function addConfession(text) {
-    const confession = {
-        id: Date.now(),
-        text: text,
-        timestamp: new Date(),
-        likes: 0
-    };
-    
-    // Add to beginning of array (newest first)
-    confessions.unshift(confession);
-    
-    // Save to localStorage
-    saveConfessions();
-    
-    // Update UI
-    renderConfessions();
-    updateConfessionCount();
-    
-    // Show success animation
-    showSuccessAnimation();
+async function addConfession(text) {
+    try {
+        const { data, error } = await supabase
+            .from('confessions')
+            .insert([
+                {
+                    text: text,
+                    is_anonymous: true
+                }
+            ])
+            .select();
+
+        if (error) {
+            console.error('Error adding confession:', error);
+            return false;
+        }
+
+        // Reload confessions to get the updated list
+        await loadConfessions();
+        return true;
+    } catch (error) {
+        console.error('Error adding confession:', error);
+        return false;
+    }
 }
 
 function renderConfessions() {
@@ -155,7 +199,8 @@ function createConfessionCard(confession) {
     card.className = 'confession-card';
     card.dataset.id = confession.id;
     
-    const timeAgo = getTimeAgo(confession.timestamp);
+    const timeAgo = getTimeAgo(confession.created_at);
+    const isLiked = userLikes.has(confession.id.toString());
     
     card.innerHTML = `
         <div class="confession-text">${escapeHtml(confession.text)}</div>
@@ -163,8 +208,8 @@ function createConfessionCard(confession) {
             <div class="confession-time">${timeAgo}</div>
             <div class="confession-actions">
                 <button class="like-btn" onclick="toggleLike(${confession.id})">
-                    <span class="like-icon">${confession.liked ? '❤️' : '🤍'}</span>
-                    <span class="like-count">${confession.likes}</span>
+                    <span class="like-icon">${isLiked ? '❤️' : '🤍'}</span>
+                    <span class="like-count">${confession.like_count}</span>
                 </button>
             </div>
         </div>
@@ -198,13 +243,47 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function toggleLike(confessionId) {
-    const confession = confessions.find(c => c.id === confessionId);
-    if (confession) {
-        confession.liked = !confession.liked;
-        confession.likes += confession.liked ? 1 : -1;
-        saveConfessions();
-        renderConfessions();
+async function toggleLike(confessionId) {
+    try {
+        const isCurrentlyLiked = userLikes.has(confessionId.toString());
+        
+        if (isCurrentlyLiked) {
+            // Remove like
+            const { error } = await supabase
+                .from('confession_likes')
+                .delete()
+                .eq('confession_id', confessionId)
+                .eq('user_identifier', userIdentifier);
+                
+            if (error) {
+                console.error('Error removing like:', error);
+                return;
+            }
+            
+            userLikes.delete(confessionId.toString());
+        } else {
+            // Add like
+            const { error } = await supabase
+                .from('confession_likes')
+                .insert([
+                    {
+                        confession_id: confessionId,
+                        user_identifier: userIdentifier
+                    }
+                ]);
+                
+            if (error) {
+                console.error('Error adding like:', error);
+                return;
+            }
+            
+            userLikes.add(confessionId.toString());
+        }
+        
+        // Reload confessions to get updated like counts
+        await loadConfessions();
+    } catch (error) {
+        console.error('Error toggling like:', error);
     }
 }
 
@@ -212,60 +291,118 @@ function updateConfessionCount() {
     confessionCount.textContent = confessions.length;
 }
 
-function saveConfessions() {
-    localStorage.setItem('spicyConfessions', JSON.stringify(confessions));
+// Generate anonymous user identifier
+function generateUserIdentifier() {
+    return 'anon_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now();
 }
 
-function loadConfessions() {
-    const saved = localStorage.getItem('spicyConfessions');
-    if (saved) {
-        confessions = JSON.parse(saved);
+// Load confessions from Supabase
+async function loadConfessions() {
+    try {
+        const { data, error } = await supabase
+            .from('confessions_with_metadata')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50); // Limit to latest 50 confessions
+
+        if (error) {
+            console.error('Error loading confessions:', error);
+            return;
+        }
+
+        confessions = data || [];
         renderConfessions();
+        updateConfessionCount();
+    } catch (error) {
+        console.error('Error loading confessions:', error);
+    }
+}
+
+// Load user's likes from Supabase
+async function loadUserLikes() {
+    try {
+        const { data, error } = await supabase
+            .from('confession_likes')
+            .select('confession_id')
+            .eq('user_identifier', userIdentifier);
+
+        if (error) {
+            console.error('Error loading user likes:', error);
+            return;
+        }
+
+        userLikes.clear();
+        data?.forEach(like => {
+            userLikes.add(like.confession_id.toString());
+        });
+        
+        // Re-render confessions to update like states
+        renderConfessions();
+    } catch (error) {
+        console.error('Error loading user likes:', error);
     }
 }
 
 function showSuccessAnimation() {
-    // Create a temporary success message
-    const successMsg = document.createElement('div');
-    successMsg.className = 'success-message';
-    successMsg.textContent = '🔥 Confession posted! 🔥';
-    successMsg.style.cssText = `
+    showToast('🔥 Confession posted! 🔥', 'success');
+}
+
+function showErrorAnimation() {
+    showToast('❌ Failed to post confession. Please try again.', 'error');
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast-message ${type}`;
+    toast.textContent = message;
+    
+    const bgColor = type === 'success' 
+        ? 'linear-gradient(45deg, #ff6b6b, #ff8e8e)' 
+        : 'linear-gradient(45deg, #e74c3c, #c0392b)';
+    
+    toast.style.cssText = `
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+        background: ${bgColor};
         color: white;
         padding: 15px 25px;
         border-radius: 25px;
         font-weight: 600;
         z-index: 2000;
-        animation: successPop 2s ease-out forwards;
+        animation: toastPop 3s ease-out forwards;
     `;
     
-    document.body.appendChild(successMsg);
+    document.body.appendChild(toast);
     
     // Remove after animation
     setTimeout(() => {
-        document.body.removeChild(successMsg);
-    }, 2000);
+        if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+        }
+    }, 3000);
 }
 
-// Add success animation CSS
+// Add toast animation CSS
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes successPop {
+    @keyframes toastPop {
         0% {
             opacity: 0;
             transform: translate(-50%, -50%) scale(0.5);
         }
-        50% {
+        15% {
             opacity: 1;
             transform: translate(-50%, -50%) scale(1.1);
         }
+        85% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
         100% {
             opacity: 0;
-            transform: translate(-50%, -50%) scale(1);
+            transform: translate(-50%, -50%) scale(0.9);
         }
     }
     
