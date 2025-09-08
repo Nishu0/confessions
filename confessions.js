@@ -500,26 +500,47 @@ async function recalculateLikeCounts() {
 // Load confessions from Supabase
 async function loadConfessions() {
     try {
-        // Get confessions with actual like counts
-        const { data, error } = await supabase
+        // Force fresh data by adding a timestamp parameter to bypass caching
+        const timestamp = Date.now();
+        console.log(`Loading confessions at ${timestamp}...`);
+        
+        // Get confessions and manually calculate like counts from the likes table
+        const { data: confessionsData, error } = await supabase
             .from('confessions')
             .select(`
                 id,
                 text,
                 created_at,
                 updated_at,
-                like_count,
                 is_anonymous
             `)
             .order('created_at', { ascending: false })
-            .limit(50); // Limit to latest 50 confessions
-
+            .limit(50);
+            
         if (error) {
             console.error('Error loading confessions:', error);
             return;
         }
-
-        confessions = data || [];
+        
+        // For each confession, get the actual like count from confession_likes table
+        const confessionsWithLikes = await Promise.all(
+            confessionsData.map(async (confession) => {
+                const { count, error: countError } = await supabase
+                    .from('confession_likes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('confession_id', confession.id);
+                    
+                if (countError) {
+                    console.error(`Error counting likes for confession ${confession.id}:`, countError);
+                    return { ...confession, like_count: 0 };
+                }
+                
+                console.log(`Confession ${confession.id} has ${count || 0} likes from likes table`);
+                return { ...confession, like_count: count || 0 };
+            })
+        );
+        
+        confessions = confessionsWithLikes || [];
         console.log('Loaded confessions with like counts:', confessions);
         
         // Log specific like counts for debugging
