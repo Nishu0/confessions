@@ -291,6 +291,8 @@ function createConfessionCard(confession) {
     const timeAgo = getTimeAgo(confession.created_at);
     const isLiked = userLikes.has(confession.id.toString());
     
+    console.log(`Rendering confession ${confession.id}: like_count=${confession.like_count}, isLiked=${isLiked}`);
+    
     card.innerHTML = `
         <div class="confession-text">${escapeHtml(confession.text)}</div>
         <div class="confession-meta">
@@ -418,7 +420,12 @@ async function toggleLike(confessionId) {
         } else {
             // Success - manually recalculate like counts and reload
             await recalculateLikeCounts();
+            
+            // Small delay to ensure database has processed updates
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             await loadConfessions();
+            await loadUserLikes();
         }
         
         // Re-enable button
@@ -514,6 +521,12 @@ async function loadConfessions() {
 
         confessions = data || [];
         console.log('Loaded confessions with like counts:', confessions);
+        
+        // Log specific like counts for debugging
+        confessions.forEach(confession => {
+            console.log(`Confession ${confession.id}: "${confession.text}" has ${confession.like_count} likes`);
+        });
+        
         renderConfessions();
         updateConfessionCount();
     } catch (error) {
