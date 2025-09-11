@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS confessions (
     text TEXT NOT NULL CHECK (char_length(text) <= 500),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    user_fid BIGINT, -- Farcaster ID (optional for anonymous confessions)
     like_count INTEGER DEFAULT 0 NOT NULL CHECK (like_count >= 0),
     is_anonymous BOOLEAN DEFAULT true NOT NULL
 );
